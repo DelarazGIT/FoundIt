@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FoundItemCard } from "@/components/FoundItemCard";
 import { UploadItemForm } from "@/components/UploadItemForm";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Filter } from "lucide-react";
 
 interface FoundItem {
   id: string;
@@ -13,12 +14,14 @@ interface FoundItem {
   returned_to: string;
   image_url: string | null;
   created_at: string;
+  found: boolean;
 }
 
 const Index = () => {
   const [items, setItems] = useState<FoundItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [filter, setFilter] = useState<"unfound" | "found" | "all">("unfound");
 
   const fetchItems = async () => {
     try {
@@ -35,6 +38,12 @@ const Index = () => {
       setIsLoading(false);
     }
   };
+
+  const filteredItems = items.filter(item => {
+    if (filter === "found") return item.found;
+    if (filter === "unfound") return !item.found;
+    return true; // "all"
+  });
 
   useEffect(() => {
     fetchItems();
@@ -81,11 +90,18 @@ const Index = () => {
               <p className="text-muted-foreground">Loading items...</p>
             </div>
           </div>
-        ) : items.length === 0 ? (
+        ) : filteredItems.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <Search className="h-16 w-16 text-muted-foreground mb-4" />
-            <h2 className="text-2xl font-semibold text-foreground mb-2">No items found yet</h2>
-            <p className="text-muted-foreground mb-6">Be the first to add a found item to help reunite it with its owner!</p>
+            <h2 className="text-2xl font-semibold text-foreground mb-2">
+              {items.length === 0 ? "No items found yet" : `No ${filter} items`}
+            </h2>
+            <p className="text-muted-foreground mb-6">
+              {items.length === 0 
+                ? "Be the first to add a found item to help reunite it with its owner!" 
+                : `No items match the current filter (${filter}). Try changing the filter or add a new item.`
+              }
+            </p>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
@@ -105,11 +121,24 @@ const Index = () => {
           <div>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-semibold text-foreground">
-                Found Items ({items.length})
+                Found Items ({filteredItems.length})
               </h2>
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <Select value={filter} onValueChange={(value: "unfound" | "found" | "all") => setFilter(value)}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unfound">Unfound</SelectItem>
+                    <SelectItem value="found">Found</SelectItem>
+                    <SelectItem value="all">All</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {items.map((item) => (
+              {filteredItems.map((item) => (
                 <FoundItemCard
                   key={item.id}
                   id={item.id}
@@ -118,6 +147,8 @@ const Index = () => {
                   returnedTo={item.returned_to}
                   imageUrl={item.image_url}
                   createdAt={item.created_at}
+                  found={item.found}
+                  onFoundUpdate={fetchItems}
                 />
               ))}
             </div>

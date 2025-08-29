@@ -17,6 +17,7 @@ export type Database = {
       found_items: {
         Row: {
           created_at: string
+          found: boolean
           id: string
           image_url: string | null
           location_found: string
@@ -26,6 +27,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          found?: boolean
           id?: string
           image_url?: string | null
           location_found: string
@@ -35,6 +37,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          found?: boolean
           id?: string
           image_url?: string | null
           location_found?: string
